@@ -1,14 +1,14 @@
 Global:
   debug: false
   use_gpu: true
-  epoch_num: 800
+  epoch_num: 500
   log_smooth_window: 20
   print_batch_step: 10
   save_model_dir: ./output/rec_ppocr_v3_distillation
-  save_epoch_step: 3
-  eval_batch_step: [0, 2000]
+  save_epoch_step: 50
+  eval_batch_step: [0, 200]
   cal_metric_during_train: true
-  pretrained_model:
+  pretrained_model: ./pretrain_models/ch_PP-OCRv3_rec_train/best_accuracy
   checkpoints:
   save_inference_dir:
   use_visualdl: false
@@ -19,6 +19,7 @@ Global:
   use_space_char: true
   distributed: true
   save_res_path: ./output/rec/predicts_ppocrv3_distillation.txt
+  d2s_train_image_shape: [3, 48, -1]
 
 
 Optimizer:
@@ -27,8 +28,8 @@ Optimizer:
   beta2: 0.999
   lr:
     name: Piecewise
-    decay_epochs : [700]
-    values : [0.0005, 0.00005]
+    decay_epochs : [700, 800]
+    values : [0.00005, 0.00001]
     warmup_epoch: 5
   regularizer:
     name: L2
@@ -45,7 +46,7 @@ Architecture:
       freeze_params: false
       return_all_feats: true
       model_type: *model_type
-      algorithm: SVTR
+      algorithm: SVTR_LCNet
       Transform:
       Backbone:
         name: MobileNetV1Enhance
@@ -72,7 +73,7 @@ Architecture:
       freeze_params: false
       return_all_feats: true
       model_type: *model_type
-      algorithm: SVTR
+      algorithm: SVTR_LCNet
       Transform:
       Backbone:
         name: MobileNetV1Enhance
@@ -153,16 +154,16 @@ Train:
     data_dir: ./train_data/
     ext_op_transform_idx: 1
     label_file_list:
-    - ./train_data/train_list.txt
+    - ./train_data/train.txt
     transforms:
     - DecodeImage:
         img_mode: BGR
         channel_first: false
-    - RecConAug:
-        prob: 0.5
-        ext_data_num: 2
-        image_shape: [48, 320, 3]
-        max_text_length: *max_text_length
+    #- RecConAug:
+    #    prob: 0.5
+    #    ext_data_num: 2
+    #   image_shape: [48, 320, 3]
+    #    max_text_length: *max_text_length
     - RecAug:
     - MultiLabelEncode:
     - RecResizeImg:
@@ -175,16 +176,16 @@ Train:
         - length
         - valid_ratio
   loader:
-    shuffle: true
-    batch_size_per_card: 128
-    drop_last: true
+    shuffle: True
+    batch_size_per_card: 64
+    drop_last: True
     num_workers: 4
 Eval:
   dataset:
     name: SimpleDataSet
     data_dir: ./train_data
     label_file_list:
-    - ./train_data/val_list.txt
+    - ./train_data/test.txt
     transforms:
     - DecodeImage:
         img_mode: BGR
@@ -202,5 +203,5 @@ Eval:
   loader:
     shuffle: false
     drop_last: false
-    batch_size_per_card: 128
+    batch_size_per_card: 64
     num_workers: 4
